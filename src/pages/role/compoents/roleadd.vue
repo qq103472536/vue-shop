@@ -37,7 +37,8 @@ import {
   reqRoleGetone,
   ReqRoleUpdata,
 } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { erroralert, successalert } from "../../../utils/alert";
+import { resolve } from "path";
 export default {
   props: ["info"],
   data() {
@@ -61,29 +62,47 @@ export default {
     this.init();
   },
   methods: {
+    // 验证
+    checkProps() {
+      return new Promise((resolve) => {
+        if (this.user.rolename === "") {
+          erroralert("请输入角色名称");
+          return;
+        }
+        // 角色权限验证
+        // if (this.user.menus.length === 0) {
+        //   erroralert("请选择角色权限");
+        //   return;
+        // }
+        resolve();
+      });
+    },
+
     //  添加角色
     add() {
-      // 转化成后端要的数据
-      this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
-      reqRoleadd(this.user).then((res) => {
-        //   弹窗添加成功
-        if (res.data.code == 200) {
-          // 转化成后端要的数据
-          this.$refs.tree.setCheckedKeys([]);
-          // 弹框弹出
-          successalert(res.data.msg);
-          //  清除内容
-          this.empty();
-          // 弹框关闭
-          this.info.isshow = false;
+      this.checkProps().then(() => {
+        // 转化成后端要的数据
+        this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
+        reqRoleadd(this.user).then((res) => {
+          //   弹窗添加成功
+          if (res.data.code == 200) {
+            // 转化成后端要的数据
+            this.$refs.tree.setCheckedKeys([]);
+            // 弹框弹出
+            successalert(res.data.msg);
+            //  清除内容
+            this.empty();
+            // 弹框关闭
+            this.info.isshow = false;
 
-          // 刷新页面
-          this.$emit("addtolelist");
+            // 刷新页面
+            this.$emit("addtolelist");
 
-          console.log(this.user);
-        } else {
-          successalert(res.data.msg);
-        }
+            console.log(this.user);
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
     // 清除弹窗内容
@@ -117,22 +136,24 @@ export default {
     },
     // 点击修改
     roleUppdata() {
-      // 转化成后端要的数据
-      this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
-      ReqRoleUpdata(this.user).then((res) => {
-        console.log(res);
-        if (res.data.code == 200) {
-          this.user = res.data.list;
-          successalert(res.data.msg);
-          // 清空数据
-          this.cancel();
-          // 关闭弹框
-          this.info.isshow = false;
-          // 刷新页面
-          this.$emit("addtolelist");
-        } else {
-          successalert(res.data.msg);
-        }
+      this.checkProps().then(() => {
+        // 转化成后端要的数据
+        this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
+        ReqRoleUpdata(this.user).then((res) => {
+          console.log(res);
+          if (res.data.code == 200) {
+            this.user = res.data.list;
+            successalert(res.data.msg);
+            // 清空数据
+            this.cancel();
+            // 关闭弹框
+            this.info.isshow = false;
+            // 刷新页面
+            this.$emit("addtolelist");
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
     cancel() {

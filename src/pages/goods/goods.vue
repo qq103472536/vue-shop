@@ -1,16 +1,9 @@
 <template>
   <div>
     <el-button type="primary" @click="addTab">添加</el-button>
-    <v-list :info="info" :list="list" @init="init" @edit="edit($event)"></v-list>
-    <v-add :info="info" ref="add" @init="init"></v-add>
-    <div class="block">
-      <el-pagination
-        layout="prev, pager, next"
-        :total="total"
-        :page-size="pageSize"
-        @current-change="currentPage"
-      ></el-pagination>
-    </div>
+    <v-list :info="info"  @edit="edit"></v-list>
+    <v-add :info="info" ref="add"></v-add>
+    
   </div>
 </template>
 
@@ -19,6 +12,7 @@ import vList from "./components/list";
 import vAdd from "./components/add";
 import { reqGoodslist, reqGoodscount } from "../../utils/http";
 import { successalert } from "../../utils/alert";
+import { mapGetters, mapActions } from "vuex";
 export default {
   components: {
     vList,
@@ -30,20 +24,40 @@ export default {
         isshow: false,
         isadd: false,
       },
-      list: [],
       pager: 1,
       total: 0,
-      pageSize: 5,
+      size: 5,
+      fid: "",
+      sid: "",
     };
   },
+  //
+  computed: {
+    ...mapGetters({
+      cateList: "cate/list",
+    }),
+  },
+  mounted() {
+    //  发cata请求 请fid
+    this.reqCateList();
+
+
+  },
   methods: {
+    ...mapActions({
+      reqCateList: "cate/reqList",
+    }),
+    getSecondId() {
+      this.fid = reqCateList.data.list.id;
+    },
+
     addTab() {
       this.info.isshow = true;
       this.info.isadd = true;
     },
     // 商品规格列表（分页）
     reqGoodslist() {
-      reqGoodslist({ page: this.pager, size: this.pageSize }).then((res) => {
+      reqGoodslist({ page: this.pager, size: this.size }).then((res) => {
         if (res.data.list.length == 0 && this.pager > 1) {
           console.log(111);
           this.pager--;
@@ -65,11 +79,7 @@ export default {
         }
       });
     },
-    // 获取列表
-    init() {
-      this.reqGoodscount();
-      this.reqGoodslist();
-    },
+
     // 点击编辑
     edit(id) {
       this.info.isshow = true;
@@ -81,10 +91,6 @@ export default {
       this.pager = e;
       this.reqGoodslist();
     },
-  },
-
-  mounted() {
-    this.init();
   },
 };
 </script>

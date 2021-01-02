@@ -35,7 +35,7 @@
 </template>
 
 <script>
-import { successalert } from "../../../utils/alert";
+import { erroralert, successalert } from "../../../utils/alert";
 import {
   reqUseradd,
   reqRolelist,
@@ -62,22 +62,44 @@ export default {
     });
   },
   methods: {
+    // 验证
+
+    checkProps() {
+      return new Promise((resolve) => {
+        if (this.user.roleid === "") {
+          erroralert("请选择角色");
+          return;
+        }
+        if (this.user.username === "") {
+          erroralert("请输入账号");
+          return;
+        }
+        if (this.user.password === "") {
+          erroralert("请输入密码");
+          return;
+        }
+        resolve();
+      });
+    },
+
     //   添加管理员
     add() {
-      reqUseradd(this.user).then((res) => {
-        if (res.data.code == 200) {
-          this.user = res.data.list;
-          successalert(res.data.msg);
-          //   关闭弹窗
-          this.cancel();
+      this.checkProps().then(() => {
+        reqUseradd(this.user).then((res) => {
+          if (res.data.code == 200) {
+            this.user = res.data.list;
+            successalert(res.data.msg);
+            //   关闭弹窗
+            this.cancel();
 
-          //5.清空user
-          this.empty();
+            //5.清空user
+            this.empty();
 
-          this.$emit("init");
-        } else {
-          successalert(res.data.msg);
-        }
+            this.$emit("init");
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
     // 清除弹窗内容
@@ -105,18 +127,34 @@ export default {
         }
       });
     },
+    checkProps2() {
+      return new Promise((resolve) => {
+        if (this.user.roleid === "") {
+          erroralert("请选择角色");
+          return;
+        }
+        if (this.user.username === "") {
+          erroralert("请输入账号");
+          return;
+        }
+        resolve();
+      });
+    },
+
     // 数据更新
     edit() {
-      reqUseredit(this.user).then((res) => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          // 清除数据
-          this.cancel();
-          //数据清空
-          this.empty();
+      this.checkProps2().then(() => {
+        reqUseredit(this.user).then((res) => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            // 清除数据
+            this.cancel();
+            //数据清空
+            this.empty();
 
-          this.$emit("init");
-        }
+            this.$emit("init");
+          }
+        });
       });
     },
   },

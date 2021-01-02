@@ -1,6 +1,9 @@
 import axios from "axios"
 import qs from "qs"
-import Vue from "vue"
+import Vue from "vue" 
+import { erroralert } from "./alert"
+import store from "../store"
+import router from "../router"
 
 // 开发环境使用8080
 let baseUrl = "/api"
@@ -9,6 +12,14 @@ Vue.prototype.$pre = "http://localhost:3000"
 // 生产环境打包
 // let baseUrl=""
 // Vue.prototype.$pre=""
+//  请求拦截：设置请求头 
+axios.interceptors.request.use(config => {
+    if (config.url !== baseUrl + "/api/userlogin") {
+        config.headers.authorization =store.state.userInfo.token
+    }
+    return config
+})
+
 
 // 响应拦截
 axios.interceptors.response.use(res => {
@@ -18,6 +29,13 @@ axios.interceptors.response.use(res => {
     if (!res.data.list) {
         res.data.list = []
     }
+    if(res.data.msg==="登录已过期或访问权限受限"){
+        // 清除用户登录的信息
+        store.dispatch("changeUser",{})
+
+        router.push("/login")
+    }
+
     console.group("本次请求地址是：" + res.config.url)
     console.log(res)
     console.groupEnd()
@@ -45,6 +63,19 @@ function dataToFromData(user) {
     }
     return data
 }
+
+
+
+
+// 登录
+export const reqLogin = (user) => {
+    return axios({
+        url: baseUrl + "/api/userlogin",
+        method: "post",
+        data: qs.stringify(user)
+    })
+}
+
 
 // ********************************菜单管理*********************************//
 // 菜单添加
@@ -408,7 +439,7 @@ export const reqGoodsadd = (user) => {
     return axios({
         url: baseUrl + "/api/goodsadd",
         method: 'post',
-        data: qs.stringify(user)
+        data: dataToFromData(user)
     })
 }
 
@@ -453,7 +484,7 @@ export const reqGoodsedit = (user) => {
     return axios({
         url: baseUrl + "/api/goodsedit",
         method: 'post',
-        data: qs.stringify(user)
+        data: dataToFromData(user)
     })
 }
 //6.商品删除
@@ -467,3 +498,56 @@ export const reqGoodsdelete = (id) => {
     })
 }
 
+// **********************************限时秒杀管理
+// 1.秒杀添加** 
+export const reqSeckadd = (user) => {
+    return axios({
+        url: baseUrl + "/api/seckadd",
+        method: 'post',
+        data: qs.stringify(user)
+    })
+}
+
+
+
+// 3.秒杀列表
+
+export const reqSecklist = (p) => {
+    return axios({
+        url: baseUrl + "/api/secklist",
+        method: "get",
+        params: p
+    })
+}
+
+// 4.秒杀获取（一条）
+
+
+export const reqSeckinfo = (id) => {
+    return axios({
+        url: baseUrl + "/api/seckinfo",
+        method: "get",
+        params: {
+            id: id
+        }
+    })
+}
+// 5.秒杀修改
+
+export const reqSeckedit = (user) => {
+    return axios({
+        url: baseUrl + "/api/seckedit",
+        method: 'post',
+        data: qs.stringify(user)
+    })
+}
+// 6.秒杀删除
+export const reqSeckdelete = (id) => {
+    return axios({
+        url: baseUrl + "/api/seckdelete",
+        method: "post",
+        data: qs.stringify({
+            id: id
+        })
+    })
+}

@@ -27,8 +27,12 @@
 </template>
 
 <script>
-import { reqBanneradd, reqBannerinfo,reqBanneredit } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import {
+  reqBanneradd,
+  reqBannerinfo,
+  reqBanneredit,
+} from "../../../utils/http";
+import { successalert, erroralert } from "../../../utils/alert";
 import path from "path";
 export default {
   props: ["info"],
@@ -50,7 +54,7 @@ export default {
       // 文件大小验证
 
       if (file.size > 2 * 1024 * 1024) {
-        alert("文件大小不能超过2M");
+        erroralert("文件大小不能超过2M");
         return;
       }
       //   let extname = file.name.slice(file.name.lastIndexOf("."));
@@ -59,7 +63,7 @@ export default {
 
       let arr = [".png", ".gif", ".jpg", ".jpeg"];
       if (!arr.some((item) => item == extname)) {
-        alert("请上传图片");
+        erroralert("请上传图片");
         return;
       }
 
@@ -85,21 +89,40 @@ export default {
         status: "",
       };
     },
+
+    // 验证
+    checkProps() {
+      return new Promise((resolve) => {
+        if (this.user.title === "") {
+          erroralert("请输入标题");
+          return;
+        }
+        if (this.user.img === "") {
+          erroralert("请上传图片");
+          return;
+        }
+        resolve();
+      });
+    },
+
     // 点击添加
     add() {
-      reqBanneradd(this.user).then((res) => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
+      this.checkProps().then(() => {
+        reqBanneradd(this.user).then((res) => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
 
-          //   清除数据
-          this.cancel();
-        } else {
-          successalert(res.data.msg);
-        }
+            //   清除数据
+            this.cancel();
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
     // 点了编辑
     getOne(id) {
+  
       reqBannerinfo(id).then((res) => {
         this.user = res.data.list;
         //补id
@@ -110,18 +133,21 @@ export default {
     },
     // 修改数据
     uppdata() {
-      reqBanneredit(this.user).then((res) => {
-        if ((res.data.code = 200)) {
-          successalert(res.data.msg);
-          // 清空数据 弹窗关闭
-          this.cancel();
-          //数据清空
-          this.empty();
-          //   刷新页面
-          this.$emit("init");
-        } else {
-          successalert(res.data.msg);
-        }
+         
+      this.checkProps().then(() => {
+        reqBanneredit(this.user).then((res) => {
+          if ((res.data.code = 200)) {
+            successalert(res.data.msg);
+            // 清空数据 弹窗关闭
+            this.cancel();
+            //数据清空
+            this.empty();
+            //   刷新页面
+            this.$emit("init");
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
   },

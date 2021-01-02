@@ -16,36 +16,25 @@
             <i class="el-icon-menu"></i>
             <span slot="title">首页</span>
           </el-menu-item>
-          <el-submenu index="1">
-            <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>系统设置</span>
-            </template>
-            <el-menu-item-group>
-              <el-menu-item index="/menu">菜单管理</el-menu-item>
-              <el-menu-item index="/role">角色管理</el-menu-item>
-              <el-menu-item index="/manage">管理员管理</el-menu-item>
-            </el-menu-item-group>
-          </el-submenu>
-          <el-submenu index="3">
-            <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>商城管理</span>
-            </template>
-            <el-menu-item-group>
-              <el-menu-item index="/cate">商品分类</el-menu-item>
-              <el-menu-item index="/specs">商品规格</el-menu-item>
-              <el-menu-item index="/goods">商品管理</el-menu-item>
-              <el-menu-item index="/member">会员管理</el-menu-item>
-              <el-menu-item index="/banner">轮播图管理</el-menu-item>
-              <el-menu-item index="/seckill">秒杀活动</el-menu-item>
-            </el-menu-item-group>
-          </el-submenu>
+          <div v-for="item in userInfo.menus" :key="item.id">
+            <el-menu-item v-if="!item.children" :index="item.url">{{item.title}}</el-menu-item>
+            <el-submenu :index="item.id+''" v-if="item.children">
+              <template slot="title">
+                <i :class="item.icon"></i>
+                <span>{{item.title}}</span>
+              </template>
+                <el-menu-item-group>
+                <el-menu-item v-for="i in item.children" :key="i.id" :index="i.url">{{i.title}}</el-menu-item>
+              </el-menu-item-group>
+            </el-submenu>
+          </div>
         </el-menu>
       </el-aside>
       <el-container>
-        <el-header></el-header>
-        <div>1111</div>
+        <el-header>
+          <h3>{{userInfo.username}}</h3>
+          <button @click="loginout()">退出</button>
+        </el-header>
         <!-- 面包屑导航 -->
         <el-main>
           <el-breadcrumb separator-class="el-icon-arrow-right" v-if="$route.name">
@@ -61,7 +50,24 @@
 </template>
 
 <script>
-export default {};
+import { mapActions, mapGetters } from "vuex";
+export default {
+  mounted() {},
+  computed: {
+    ...mapGetters({
+      userInfo: "userInfo",
+    }),
+  },
+  methods: {
+    ...mapActions({
+      changeUser: "changeUser",
+    }),
+    loginout() {
+      this.changeUser({});
+      this.$router.replace("/login");
+    },
+  },
+};
 </script>
 
 <style scoped>

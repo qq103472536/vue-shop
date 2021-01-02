@@ -46,8 +46,8 @@
 <script>
 import { indexRoutes } from "../../../router/index";
 import { reqcateAdd, reqCateedit, reqCateinfo } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
-import path from "path";
+import { successalert, erroralert } from "../../../utils/alert";
+import path, { resolve } from "path";
 import { mapActions, mapGetters } from "vuex";
 export default {
   // 2.menu传的添加
@@ -93,20 +93,36 @@ export default {
       this.imgUrl = URL.createObjectURL(file);
       this.user.img = file;
     },
-//添加
-    add() {
-      reqcateAdd(this.user).then((res) => {
-        if (res.data.code == 200) {
-          // 封装了成功弹框
-          successalert(res.data.msg);
-          //弹框消失
-          this.cancel();
-          //5.清空user
-          this.empty();
-          //25.列表刷新
-          // this.$emit("init");
-          this.reqList()
+    // 验证
+    checkProps() {
+      return new Promise((resolve) => {
+        if (this.user.pia === "") {
+          erroralert("请选择产品分类");
+          return;
         }
+        if (this.user.catename === "") {
+          erroralert("请输入分类名称");
+          return;
+        }
+        resolve();
+      });
+    },
+    //添加
+    add() {
+      this.checkProps().then(() => {
+        reqcateAdd(this.user).then((res) => {
+          if (res.data.code == 200) {
+            // 封装了成功弹框
+            successalert(res.data.msg);
+            //弹框消失
+            this.cancel();
+            //5.清空user
+            this.empty();
+            //25.列表刷新
+            // this.$emit("init");
+            this.reqList();
+          }
+        });
       });
     },
     // 编辑的时候清除数据    //   关闭弹窗
@@ -142,16 +158,18 @@ export default {
     },
     // 数据更新
     updata() {
-      reqCateedit(this.user).then((res) => {
-        // 提示弹窗
-        successalert(res.data.msg);
-        // 清除弹窗
-        this.cancel();
-        // 清空数据
-        this.empty();
-        // 刷新页面
-        // this.$emit("init");
-        this.reqList()
+      this.checkProps().then(() => {
+        reqCateedit(this.user).then((res) => {
+          // 提示弹窗
+          successalert(res.data.msg);
+          // 清除弹窗
+          this.cancel();
+          // 清空数据
+          this.empty();
+          // 刷新页面
+          // this.$emit("init");
+          this.reqList();
+        });
       });
     },
     // 状态层数据

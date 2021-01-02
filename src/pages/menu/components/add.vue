@@ -53,7 +53,8 @@
 <script>
 import { indexRoutes } from "../../../router/index";
 import { reqMenuAdd, reqMenuInfo, reqMenuUpdata } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { erroralert, successalert } from "../../../utils/alert";
+import { resolve } from "path";
 export default {
   // 2.menu传的添加
   props: ["info", "list"],
@@ -88,18 +89,36 @@ export default {
       }
       this.info.isshow = false;
     },
+    // 验证
+
+    checkProps() {
+      return new Promise((resolve) => {
+        if (this.user.title === "") {
+          erroralert("请输入菜单名称");
+          return;
+        }
+        if (this.user.pid === 0 && this.user.pid === "") {
+          erroralert("请选择上级");
+          return;
+        }
+        resolve();
+      });
+    },
+
     add() {
-      console.log(this.user);
-      // 添加完成发axios请求
-      reqMenuAdd(this.user).then((res) => {
-        //   弹窗添加成功
-        successalert(res.data.msg);
-        // 清除内容
-        this.empty();
-        // 关闭弹窗
-        this.cancel();
-        // 绑定自定义事件
-        this.$emit("init");
+      this.checkProps().then(() => {
+        console.log(this.user);
+        // 添加完成发axios请求
+        reqMenuAdd(this.user).then((res) => {
+          //   弹窗添加成功
+          successalert(res.data.msg);
+          // 清除内容
+          this.empty();
+          // 关闭弹窗
+          this.cancel();
+          // 绑定自定义事件
+          this.$emit("init");
+        });
       });
     },
     // 清除弹窗内容
@@ -132,15 +151,17 @@ export default {
     },
     // 数据更新
     updata() {
-      reqMenuUpdata(this.user).then((res) => {
-        // 提示弹窗
-        successalert(res.data.msg);
-        // 清除弹窗
-        this.cancel();
-        // 清空数据
-        this.empty();
-        // 刷新页面
-        this.$emit("init");
+      this.checkProps().then(() => {
+        reqMenuUpdata(this.user).then((res) => {
+          // 提示弹窗
+          successalert(res.data.msg);
+          // 清除弹窗
+          this.cancel();
+          // 清空数据
+          this.empty();
+          // 刷新页面
+          this.$emit("init");
+        });
       });
     },
   },

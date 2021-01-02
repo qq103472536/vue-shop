@@ -8,7 +8,7 @@
     >
       <el-form :model="user">
         <el-form-item label="一级分类" label-width="100px">
-          <el-select v-model="user.first_cateid" placeholder="请选择活动区域">
+          <el-select v-model="user.first_cateid" @change="changeList">
             <el-option label="———请选择————" value disabled></el-option>
             <el-option
               v-for="item in cateList"
@@ -19,9 +19,14 @@
           </el-select>
         </el-form-item>
         <el-form-item label="二级分类" label-width="100px">
-          <el-select v-model="user.second_cateid" placeholder="请选择活动区域">
+          <el-select v-model="user.second_cateid">
             <el-option label="———请选择————" value disabled></el-option>
-            <el-option label="" value="2"></el-option>
+            <el-option
+              v-for="item in secondCateList"
+              :key="item.id"
+              :label="item.catename"
+              :value="item.id"
+            ></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="商品名称" label-width="100px">
@@ -46,19 +51,30 @@
             </el-upload>
           </div>
         </el-form-item>
-        <el-form-item label="规格属性" label-width="100px">
-          <el-select v-model="user.specsid" multiple>
+        <el-form-item label="商品规格" label-width="100px">
+          <el-select v-model="user.specsid" @change="changeSpecsId">
             <el-option label="———请选择————" value disabled></el-option>
-            <el-option :label="user.specsattr" value="1"></el-option>
+            <el-option
+              v-for="item in specsList"
+              :key="item.id"
+              :label="item.specsname"
+              :value="item.id"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="规格属性" label-width="100px">
+          <el-select v-model="user.specsattr" multiple>
+            <el-option label="———请选择————" value disabled></el-option>
+            <el-option v-for="item in specsattrList" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="是否新品" label-width="100px">
-          <el-radio v-model="user.isnew" :label="1">备选项</el-radio>
-          <el-radio v-model="user.isnew" :label="2">备选项</el-radio>
+          <el-radio v-model="user.isnew" :label="1">是</el-radio>
+          <el-radio v-model="user.isnew" :label="2">否</el-radio>
         </el-form-item>
         <el-form-item label="是否热卖" label-width="100px">
-          <el-radio v-model="user.ishot" :label="1">备选项</el-radio>
-          <el-radio v-model="user.ishot" :label="2">备选项</el-radio>
+          <el-radio v-model="user.ishot" :label="1">是</el-radio>
+          <el-radio v-model="user.ishot" :label="2">否</el-radio>
         </el-form-item>
         <el-form-item label="状态" label-width="100px">
           <el-switch v-model="user.status" :active-value="1" :inactive-value="2"></el-switch>
@@ -81,12 +97,12 @@
 <script>
 import E from "wangeditor";
 import {
-  reqcatelist,
+  reqCatelist,
   reqGoodsadd,
   reqGoodsinfo,
   reqGoodsedit,
 } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { successalert, erroralert } from "../../../utils/alert";
 import path from "path";
 import { mapActions, mapGetters } from "vuex";
 export default {
@@ -115,20 +131,66 @@ export default {
         ishot: 1,
         status: 1,
       },
+      // 图片
       imgUrl: "",
+      // 二级分类的列表
+      secondCateList: [],
+      specsattrList: [],
     };
   },
   methods: {
     ...mapActions({
       reqCateList: "cate/reqList",
+      reqSpecsList: "specs/reqSpecslist",
+      reqlist: "goods/reqList",
+      reqtotal: "goods/reqtotal",
     }),
-    //新增属性
-    addAttr() {
-      this.attrsArr.push({ value: "" });
+
+    // 上传图片
+    changeImg2(e) {
+      let file = e.raw;
+      // 判断文件类型
+      let extname = path.extname(file.name);
+      let arr = [".png", ".gif", ".jpg", ".jpeg"];
+      if (!arr.some((item) => item === extname)) {
+        erroralert("请上传图片");
+        return;
+      }
+      const isJPG = arr;
+      const isLt2M = file.size / 1024 / 1024 < 2;
+      if (!isJPG) {
+        return this.$message.error("上传文件类型不正确");
+      }
+      if (!isLt2M) {
+        return this.$message.error("上传图片大小不能超过 2MB!");
+      }
+      this.imgUrl = URL.createObjectURL(file);
+      this.user.img = file;
     },
-    //删除属性
-    delAttr(index) {
-      this.attrsArr.splice(index, 1);
+    // 处理2级分类
+    changeList() {
+      (this.user.second_cateid = ""), this.getreqCatelist();
+    },
+    // 获取二级分类
+    getreqCatelist() {
+      reqCatelist({ pid: this.user.first_cateid }).then((res) => {
+        this.secondCateList = res.data.list;
+      });
+    },
+
+    // 商品规格改变
+    changeSpecsId() {
+      //将之前的规格属性清空
+      this.user.specsattr = [];
+
+      //计算出规格属性展示的所有选项的列表
+      this.getspecsattrList();
+    },
+
+    // 商品规格
+    getspecsattrList() {
+      let obj = this.specsList.find((item) => item.id == this.user.specsid); //找到了，返回哪条数据，没找到，返回undefined
+      this.specsattrList = obj ? obj.attrs : [];
     },
 
     // 编辑清空数据
@@ -149,53 +211,133 @@ export default {
         img: "",
         description: "",
         specsid: "",
-        specsattr: "",
+        specsattr: [],
         isnew: 1,
         ishot: 1,
         status: 1,
       }),
-        (this.imgUrl = "");
-      // (this.attrsArr = [{ value: "" }]);
+        (this.imgUrl = ""),
+        (this.specsattrList = []),
+        (this.secondCateList = []);
     },
+    // 验证
+    checkProps() {
+      return new Promise((resolve) => {
+        if (this.user.first_cateid === "") {
+          erroralert("请选择分类");
+          return;
+        }
+        if (this.user.second_cateid === "") {
+          erroralert("请选择分类");
+          return;
+        }
+        if (this.user.goodsname === "") {
+          erroralert("请输入产品名称");
+          return;
+        }
+        let priceReg = /(^[1-9]\d*(\.\d{1,2})?$)|(^0(\.\d{1,2})?$)/;
+        if (this.user.price === "" && !priceReg.test(this.user.price)) {
+          erroralert("请输入价格");
+          return;
+        }
+        if (
+          this.user.market_price === "" &&
+          !priceReg.test(this.user.market_price)
+        ) {
+          erroralert("请输入价格");
+          return;
+        }
+        if (!this.user.img) {
+          erroralert("请上传商品图片");
+          return;
+        }
+        if (this.user.img === "") {
+          erroralert("请上传商品图片");
+          return;
+        }
+        if (this.user.description === "") {
+          erroralert("请输入商品描述");
+          return;
+        }
+        if (this.user.specsid === "") {
+          erroralert("请选择商品规格");
+          return;
+        }
+
+        resolve();
+      });
+    },
+
     // 点击添加
     add() {
-      //   this.user.attrs = JSON.stringify(this.attrsArr.map((item) => item.value));
-      reqGoodsadd(this.user).then((res) => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          //   清除数据
-          this.cancel();
-          this.empty();
-          this.$emit("init");
-        } else {
-          successalert(res.data.msg);
-        }
+      this.checkProps().then(() => {
+        //取出富文本编辑器的内容，赋值给user
+        this.user.description = this.editor.txt.html();
+
+        let data = {
+          ...this.user,
+          // 由于后端要的specsattr是数组字符串，前端需要是数组，所以要拷贝、处理一下，再发送；
+          // 但是由于有对象（img）,所以不能使用JSON.parse(JSON.stringify())拷贝，需要使用...
+          specsattr: JSON.stringify(this.user.specsattr),
+        };
+
+        //   this.user.attrs = JSON.stringify(this.attrsArr.map((item) => item.value));
+        reqGoodsadd(data).then((res) => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            //   清除数据
+            this.cancel();
+            this.empty();
+            // 刷新页面
+            this.reqlist();
+            this.reqtotal();
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
     // 点了编辑
     getOne(id) {
       reqGoodsinfo(id).then((res) => {
-        this.user = res.data.list[0];
-        this.user.attrs = JSON.parse(this.user.attrs); //['红色','绿色','黄色']
+        if (res.data.code == 200) {
+          this.user = res.data.list;
+          //  获取二级分类列表
+          this.getreqCatelist();
+          // 图片
+          this.imgUrl = this.$pre + this.user.img;
+          // 获取规格列表
+          this.getspecsattrList();
+          this.user.specsattr = JSON.parse(this.user.specsattr);
+          this.user.id = id;
 
-        this.attrsArr = this.user.attrs.map((item) => ({ value: item }));
+          if (this.editor) {
+            this.editor.txt.html(this.user.description);
+          }
+        }
       });
     },
     // 修改数据
     uppdata() {
-      this.user.attrs = JSON.stringify(this.attrsArr.map((item) => item.value));
-      reqGoodsedit(this.user).then((res) => {
-        if ((res.data.code = 200)) {
-          successalert(res.data.msg);
-          // 清空数据 弹窗关闭
-          this.cancel();
-          //数据清空
-          this.empty();
-          //   刷新页面
-          this.$emit("init");
-        } else {
-          successalert(res.data.msg);
-        }
+      this.checkProps().then(() => {
+        let data = {
+          ...this.user,
+          specsattr: JSON.stringify(this.user.specsattr),
+        };
+        reqGoodsedit(this.user).then((res) => {
+          if ((res.data.code = 200)) {
+            successalert(res.data.msg);
+            // 清空数据 弹窗关闭
+            this.cancel();
+            //数据清空
+            this.empty();
+            //   刷新页面
+            this.reqlist();
+            this.reqtotal();
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
     //创建富文本编辑器
@@ -206,34 +348,14 @@ export default {
       //赋值
       this.editor.txt.html(this.user.description);
     },
-    // 上传图片
-    changeImg2(file) {
-      console.log(file);
-      // 判断文件类型
-      let extname = path.extname(file.name);
-      let arr = [".png", ".gif", ".jpg", ".jpeg"];
-      if (!arr.some((item) => item === extname)) {
-        erroralert("请上传图片");
-        return;
-      }
-      const isJPG = arr;
-      const isLt2M = file.size / 1024 / 1024 < 2;
-      if (!isJPG) {
-        return this.$message.error("上传文件类型不正确");
-      }
-      if (!isLt2M) {
-        return this.$message.error("上传头像图片大小不能超过 2MB!");
-      }
-      this.imgUrl = URL.createObjectURL(file.raw);
-    },
-   
-    // 处理2级分类
-
   },
   mounted() {
     if (this.cateList.length === 0) {
       this.reqCateList();
     }
+    this.reqSpecsList(true);
+
+    console.log(this.specsList);
   },
 };
 </script>

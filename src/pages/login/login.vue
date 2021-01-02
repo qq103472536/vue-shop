@@ -6,10 +6,10 @@
       </div>
 
       <div class="ipt">
-        <el-input placeholder="请输入内容" v-model="input" clearable></el-input>
+        <el-input placeholder="请输入内容" v-model="user.username" clearable></el-input>
       </div>
       <div class="ipt">
-        <el-input placeholder="请输入密码" v-model="password" show-password></el-input>
+        <el-input placeholder="请输入密码" v-model="user.password" show-password></el-input>
       </div>
       <el-row>
         <div class="center">
@@ -21,16 +21,36 @@
 </template>
 
 <script>
+import { mapActions, mapGetters } from 'vuex';
+import {reqLogin} from "../../utils/http"
+
 export default {
   data() {
     return {
-      input: "",
-      password: "",
+      user: {
+        username: "",
+        password: "",
+      },
     };
   },
+  computed:{
+    ...mapGetters({
+      userInfo:"userInfo"
+    })
+  },
   methods: {
+    ...mapActions({
+      changeUser:"changeUser"
+    }),
     login() {
-      this.$router.push("/");
+      reqLogin(this.user).then(res=>{
+        if(res.data.code===200){
+          // 登录成功
+          this.changeUser(res.data.list)
+            this.$router.push("/");
+        }
+      })
+    
     },
   },
 };

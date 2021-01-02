@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-dialog :specsname="info.isadd?'添加轮播图':'编辑轮播图'" :visible.sync="info.isshow" @closed="cancel">
+    <el-dialog :specsname="info.isadd?'添加规格':'编辑规格'" :visible.sync="info.isshow" @closed="cancel">
       <el-form :model="user">
         <el-form-item label="规格名称" label-width="100px">
           <el-input v-model="user.specsname" autocomplete="off"></el-input>
@@ -33,10 +33,16 @@
 
 <script>
 import { reqSpecsadd, reqSpecsinfo, reqSpecsedit } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
-import path from "path";
+import { erroralert, successalert } from "../../../utils/alert";
+import { mapGetters, mapActions } from "vuex";
+import path, { resolve } from "path";
 export default {
   props: ["info"],
+  computed: {
+    ...mapGetters({
+      list: "specs/list",
+    }),
+  },
   data() {
     return {
       user: {
@@ -48,6 +54,11 @@ export default {
     };
   },
   methods: {
+    ...mapActions({
+      reqlist: "specs/reqSpecslist",
+      reqTotal: "specs/reqSpecscount",
+    }),
+
     //新增属性
     addAttr() {
       this.attrsArr.push({ value: "" });
@@ -73,19 +84,41 @@ export default {
       }),
         (this.attrsArr = [{ value: "" }]);
     },
+    // 验证
+    checkProps() {
+      return new Promise((resolve) => {
+        if (this.user.specsname === "") {
+          erroralert("内容不能为空");
+          return;
+        }
+        if (this.attrsArr.some((item) => item.value === "")) {
+          erroralert("规格不能为空");
+        }
+        return;
+        resolve();
+      });
+    },
+
     // 点击添加
     add() {
-      this.user.attrs = JSON.stringify(this.attrsArr.map((item) => item.value));
-      reqSpecsadd(this.user).then((res) => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          //   清除数据
-          this.cancel();
-          this.empty();
-          this.$emit("init");
-        } else {
-          successalert(res.data.msg);
-        }
+      this.checkProps().then(() => {
+        this.user.attrs = JSON.stringify(
+          this.attrsArr.map((item) => item.value)
+        );
+        reqSpecsadd(this.user).then((res) => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            //   清除数据
+
+            this.cancel();
+            this.empty();
+            // 刷新页面
+            this.reqlist();
+            this.reqTotal();
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
     // 点了编辑
@@ -99,19 +132,24 @@ export default {
     },
     // 修改数据
     uppdata() {
-      this.user.attrs = JSON.stringify(this.attrsArr.map((item) => item.value));
-      reqSpecsedit(this.user).then((res) => {
-        if ((res.data.code = 200)) {
-          successalert(res.data.msg);
-          // 清空数据 弹窗关闭
-          this.cancel();
-          //数据清空
-          this.empty();
-          //   刷新页面
-          this.$emit("init");
-        } else {
-          successalert(res.data.msg);
-        }
+      this.checkProps().then(() => {
+        this.user.attrs = JSON.stringify(
+          this.attrsArr.map((item) => item.value)
+        );
+        reqSpecsedit(this.user).then((res) => {
+          if ((res.data.code = 200)) {
+            successalert(res.data.msg);
+            // 清空数据 弹窗关闭
+            this.cancel();
+            //数据清空
+            this.empty();
+            // 刷新页面
+            this.reqlist();
+            this.reqTotal();
+          } else {
+            successalert(res.data.msg);
+          }
+        });
       });
     },
   },
